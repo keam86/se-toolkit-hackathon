@@ -151,11 +151,33 @@ async def handle_expense_message(message: types.Message):
         await session.commit()
         await session.refresh(expense)
 
+    # Calculate total spending and balance
+    async with async_session() as session:
+        result = await session.execute(
+            select(func.sum(Expense.amount)).where(Expense.user_id == message.from_user.id)
+        )
+        total_spent = result.scalar() or 0.0
+
+    budget = await get_user_budget(message.from_user.id)
+    balance = (budget - total_spent) if budget is not None else None
+    over_budget = budget is not None and total_spent > budget
+
+    response = f"✅ Expense logged!\n\n"
+    response += f"📝 {description}\n"
+    response += f"💰 {amount} {currency}\n"
+    response += f"📂 {category_name}\n"
+
+    if balance is not None:
+        if balance >= 0:
+            response += f"\n💵 Balance: {balance:,.2f}"
+        else:
+            response += f"\n🚨 Balance: {balance:,.2f} (over budget)"
+
+    if over_budget:
+        response = f"⚠️ !! This expense goes beyond the budget !! ⚠️\n\n" + response
+
     await message.answer(
-        f"✅ Expense logged!\n\n"
-        f"📝 {description}\n"
-        f"💰 {amount} {currency}\n"
-        f"📂 {category_name}",
+        response,
         reply_markup=expense_actions_keyboard(expense.id),
     )
 
@@ -196,6 +218,8 @@ async def cmd_delete(message: types.Message):
 
 # ── Command: /all ───────────────────────────────────────────
 async def cmd_all(message: types.Message):
+    budget = await get_user_budget(message.from_user.id)
+
     async with async_session() as session:
         result = await session.execute(
             select(Expense)
@@ -204,7 +228,7 @@ async def cmd_all(message: types.Message):
         )
         expenses = result.scalars().all()
 
-    text = format_expenses_table(expenses, "All Expenses")
+    text = format_expenses_table(expenses, "All Expenses", budget=budget)
     await message.answer(text, parse_mode="Markdown")
 
 

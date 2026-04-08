@@ -9,7 +9,7 @@ def format_expense(expense: Expense) -> str:
     return f"#{expense.id} • {desc} — **{expense.amount} {expense.currency}** ({cat})"
 
 
-def format_expenses_table(expenses: List[Expense], title: str = "Expenses") -> str:
+def format_expenses_table(expenses: List[Expense], title: str = "Expenses", budget: float = None) -> str:
     """Format a list of expenses as a readable table."""
     if not expenses:
         return f"📋 *{title}*\n\nNo expenses found."
@@ -22,6 +22,17 @@ def format_expenses_table(expenses: List[Expense], title: str = "Expenses") -> s
 
     lines.append(f"\n💰 *Total: {total:.2f}*")
     lines.append(f"📊 *Count: {len(expenses)}*")
+
+    if budget is not None:
+        remaining = budget - total
+        pct_used = (total / budget * 100) if budget > 0 else 0
+        if remaining >= 0:
+            lines.append(f"📋 Budget: {budget:.2f} ({pct_used:.0f}% used)")
+            lines.append(f"✅ Balance: {remaining:.2f}")
+        else:
+            lines.append(f"📋 Budget: {budget:.2f} ({pct_used:.0f}% used)")
+            lines.append(f"🚨 Over budget by: {abs(remaining):.2f}")
+
     lines.append(f"💡 Use /delete <id> to remove an expense")
     return "\n".join(lines)
 
