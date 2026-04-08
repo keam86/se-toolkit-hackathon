@@ -1,0 +1,7 @@
+aiogram>=3.4,<4
+sqlalchemy>=2.0,<3
+aiosqlite>=0.19,<1
+alembic>=1.13,<2
+python-dotenv>=1.0,<2
+openai>=1.10,<2
+tabulate>=0.9,<1
